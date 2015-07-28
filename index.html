@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>WebVR YouTube 360° Video</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <meta name="viewmode" content="projection=stereo">
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html, body {
+        background-color: #000;
+        color: #fff;
+      }
+
+      html, body {
+        height: 100%;
+      }
+
+      body {
+        font-family: "Helvetica Neue", sans-serif;
+      }
+
+      iframe {
+        border: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+      video {
+        height: 100%;
+        width: 100%;
+      }
+
+      .hidden {
+        display: none;
+      }
+    </style>
+    <link rel="stylesheet" href="css/lib/axis.css">
+  </head>
+  <body>
+    <!--<iframe width="100%" height="100%" type="text/html" src="test.mp4" allowfullscreen></iframe>-->
+    <section class="axis frame">
+      <div class="axis container">
+        <video class="axis"></video>
+      </div>
+    </section>
+    <script src="js/lib/axis.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
