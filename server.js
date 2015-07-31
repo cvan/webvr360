@@ -1,4 +1,5 @@
 var bodyParser = require('body-parser');
+var cors = require('cors');
 var express = require('express');
 var keenio = require('express-keenio');
 var morgan = require('morgan');
@@ -31,6 +32,8 @@ if (process.env.KEEN_API_URL) {
 app.use(morgan(NODE_ENV === 'development' ? 'dev' : 'combined'));
 
 app.use(express.static('public'));
+
+app.use(cors());
 
 // For parsing text (used below).
 var textBodyParser = bodyParser.text();
