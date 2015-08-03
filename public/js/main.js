@@ -1,39 +1,131 @@
 (function () {
 
-var roomName = window.location.pathname.split('/')[2];
+var pathname = window.location.pathname;
+var pathnameChunks = pathname.split('/');
+var roomName = pathnameChunks[2];
 
-if (!roomName) {
-  window.location.href = '/manage/' + Math.random().toString(36).substr(2, 5);
+if (pathname === '/' && localStorage.previousPath) {
+  window.location.href = localStorage.previousPath;
   return;
 }
 
-document.title = roomName + ' | ' + document.title;
+if (!roomName) {
+  var roomVerb = window.location.pathname.split('/')[1] || 'manage';
+  window.location.href = '/' + roomVerb + '/' + Math.random().toString(36).substr(2, 5);
+  return;
+}
 
-var infoCache = {};
+localStorage.previousPath = window.location.href;
 
+
+var DEFAULT_URLS = [
+  'https://www.youtube.com/watch?v=scL_bXF7k_Q',
+  'https://www.youtube.com/watch?v=huC3s9lsf4k',
+  'https://www.youtube.com/watch?v=hI7-Fsb9gaY',
+];
+
+var appback = new Appback({
+  baseUrl: 'https://webvr.appback.com/'
+});
+
+var state = {
+  infoCache: {},
+  urls: []
+};
+state.urls = getListOfUrls();
 loadCache();
+updateAndRender();
 
 function loadCache() {
-  infoCache = JSON.parse(localStorage.infoCache || '{}');
+  state.infoCache = JSON.parse(localStorage.infoCache || '{}');
 }
-
-window.infoCache = infoCache;
 
 function persistCache() {
-  localStorage.infoCache = JSON.stringify(infoCache);
+  localStorage.infoCache = JSON.stringify(state.infoCache);
 }
+
+
+function hashCode(str) {
+  var len = str.length;
+  if (!len) {
+    return '0';
+  }
+
+  var chr;
+  var hash = 0;
+  var i = 0;
+
+  for (; i < len; i++) {
+    chr = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + chr;
+    hash |= 0;  // Convert to a 32-bit integer.
+  }
+
+  return String(Math.abs(hash));
+}
+
+
+var storeName = 'video-' + roomName;
+var videoStore = appback.store(storeName);
+
+window.videoStore = videoStore;
+
+
+videoStore.findAll().done(function (items) {
+  console.log('findAll', items);
+
+  if (items.length) {
+    addUrlsFromCloud(items, true);
+  } else {
+    urls.value = DEFAULT_URLS.join('\n');
+    processUrlsFromInput();
+  }
+}).fail(function (err) {
+  console.error('Could not find all:', err);
+});
+
+
+videoStore.on('change', function (type, item) {
+  console.log('change', type, item);
+
+  // TODO: Make sure this is tested when changes are made from another user.
+  addUrlsFromCloud(item);
+});
+
+function removeVideo(url, options) {
+  console.log('removeVideo');
+  options = options || {};
+  var id = hashCode(url);
+  return appback.store.remove(storeName, id, options);
+}
+
+
+function updateOrAddVideo(url, position, options) {
+  console.log('updateOrAddVideo');
+  options = options || {};
+  var id = hashCode(url);
+  return appback.store.updateOrAdd(storeName, id, {
+    id: id,
+    url: url,
+    position: position,
+  }, options);
+}
+
+
+
+document.title = roomName + ' | ' + document.title;
 
 function getInfo(url) {
   return new Promise(function (resolve, reject) {
 
-    if (url in infoCache) {
-      return resolve(infoCache[url]);
+    if (url in state.infoCache) {
+      return resolve(state.infoCache[url]);
     }
 
     fetch('/api/video/info?url=' + url).then(function (res) {
       return res.json();
     }).then(function (data) {
-      infoCache[url] = data;
+      state.infoCache[url] = data;
       persistCache();
       resolve(data);
     }).catch(reject);
@@ -42,28 +134,62 @@ function getInfo(url) {
 }
 
 function getListOfUrls() {
-  return urls.value.replace(/ /g, '').replace(/\n+$/g, '').split('\n');
+  return urls.value.replace(/\n+/g, '\n').replace(/\n+$/g, '').split('\n');
+  // return urls.value.replace(/\n+$/g, '').split('\n');
 }
 
 function eq(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
-var state = {};
-state.list = getListOfUrls();
+urls.addEventListener('input', processUrlsFromInput);
 
-renderSidebar();
+function processUrlsFromInput(e) {
+  console.log('processUrlsFromInput', e && e.type);
 
-urls.addEventListener('input', function () {
+  // console.log('urls', urls.value);
+  urls.value = urls.value.replace(/\n+/g, '\n');
 
   var listNew = getListOfUrls();
-  if (!eq(state.list, listNew)) {
-    state.list = getListOfUrls();
-    updateUrlsInTheCloud();
-    renderSidebar();
+
+  if (!eq(state.urls, listNew)) {
+    state.urls.forEach(function (url) {
+      if (listNew.indexOf(url) === -1) {
+        // Delete the item.
+        // removeVideo(url, {silent: true});
+      }
+    });
+
+    state.urls = listNew;
+
+    updateAndRender(true);
+  }
+}
+
+function addUrlsFromCloud(items) {
+  console.log('addUrlsFromCloud', items);
+
+  if (!Array.isArray(items)) {
+    items = [items];
   }
 
-});
+  state.urls = [];
+
+  items.forEach(function (item) {
+    if (item.url) {
+      state.urls[item.position] = item.url;
+    }
+  });
+
+  if (state.urls.length) {
+    urls.value = state.urls.join('\n') + '\n';
+  } else {
+    urls.value = '';
+  }
+
+  updateAndRender();
+}
+
 
 var ESCAPE_LOOKUP = {
   '&': '&amp;',
@@ -89,24 +215,38 @@ function escape_(text) {
   return ('' + text).replace(ESCAPE_REGEX, escaper);
 }
 
+function deleteAllVideo() {
+  videoStore.removeAll();
+}
 
-function renderSidebar() {
+
+function updateAndRender(postToCloud) {
   var proms = [];
-  state.list.forEach(function (url) {
-    proms.push(getInfo(url));
+  state.urls.forEach(function (url) {
+    console.log('state.urls.forEach', url);
+    if (url) {
+      proms.push(getInfo(url));
+    }
   });
+
+  if (!proms.length) {
+    previews.innerHTML = '';
+    return;
+  }
 
   var html = '';
 
   Promise.all(proms).then(function (info) {
 
     console.log('info', info);
-    info.forEach(function (item) {
+    info.forEach(function (item, idx) {
       html += (
         '<li class="preview">' +
-        '<iframe class="embed--yt" src="https://youtube.com/embed/' + item.video_id + '?modestbranding=1&rel=0&autohide=1" allowfullscreen></iframe>' +
+        '<iframe class="embed--yt" src="https://youtube.com/embed/' + escape_(item.video_id) + '?modestbranding=1&rel=0&autohide=1" allowfullscreen></iframe>' +
         '</li>\n'
       );
+
+      updateOrAddVideo(item.loaderUrl, idx, {silent: true});
     });
 
     previews.innerHTML = html;
@@ -116,41 +256,8 @@ function renderSidebar() {
   });
 }
 
-function updateUrlsInTheCloud() {
-  WorldManager
-}
+// TODO: Don't choke on dupes.
 
-function WorldManager() {
-  this.storeUrl = 'https://webvr.firebaseio.com/webvr360/worlds';
-  this.ref = new Firebase(self.storeUrl);
-}
-
-WorldManager.prototype = {
-  init: function () {
-    // this.ref = new Firebase(self.storeUrl);
-    // self.ref.on('child_added', function (snapshot) {
-    //   var key = snapshot.key();
-    //   var data = snapshot.val();
-    //   data.key = key;
-
-    //   var idx = panoAddLater(data);
-    //   panoIdxByKey[key] = idx;
-    // });
-  },
-  create: function () {
-
-    this.ref.promisePush({
-      video: self.pending.audio.cdnUrl.replace(/^http:/, 'https:') + audioExt,
-      image: self.pending.image.cdnUrl.replace(/^http:/, 'https:') + imageExt
-    }).then(function (newRef) {
-      var key = newRef.key();
-      console.log('Successfully created new world: %s', key);
-    });
-
-  },
-};
-
-// self.WorldManager = new WorldManager();
 
 form.addEventListener('submit', function (e) {
 

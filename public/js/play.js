@@ -3,136 +3,111 @@
 var roomName = window.location.pathname.split('/')[2];
 
 if (!roomName) {
-  window.location.href = '/manage/' + Math.random().toString(36).substr(2, 5);
+  window.location.href = '/';
   return;
 }
 
 document.title = 'Play ' + roomName + ' | ' + document.title;
 
-
-var infoCache = {};
-
-loadCache();
-
-function loadCache() {
-  infoCache = JSON.parse(localStorage.infoCache || '{}');
-}
-
-window.infoCache = infoCache;
-
-
-function getAudio(url) {
-  return new Promise(function (resolve, reject) {
-
-    fetch('/video/audio?url=' + url).then(function (res) {
-      return res.json();
-    }).then(function (data) {
-      resolve(data);
-    }).catch(reject);
-
-  });
-}
-
-function getVideo(url) {
-  return new Promise(function (resolve, reject) {
-
-    fetch('/video/video?url=' + url).then(function (res) {
-      return res.json();
-    }).then(function (data) {
-      resolve(data);
-    }).catch(reject);
-
-  });
-}
-
-var videos = Object.keys(infoCache).map(function (key) {
-  return {url: key};
+var appback = new Appback({
+  baseUrl: 'https://webvr.appback.com/'
 });
 
-// var state = {};
-// state.list = [
-//   'https://www.youtube.com/watch?v=scL_bXF7k_Q',
-//   'https://www.youtube.com/watch?v=huC3s9lsf4k',
-//   'https://www.youtube.com/watch?v=hI7-Fsb9gaY',
-// ];
+var state = {
+  counter: -1,
+  videos: [],
+  videoCurrent: null
+};
 
-// var videos = [
-//   {url: 'https://www.youtube.com/watch?v=scL_bXF7k_Q'},
-//   {url: 'https://www.youtube.com/watch?v=huC3s9lsf4k'},
-//   {url: 'https://www.youtube.com/watch?v=hI7-Fsb9gaY'},
-// ];
+var storeName = 'video-' + roomName;
+var videoStore = appback.store(storeName);
 
-var counter = -1;
-var videoCurrent;
+window.videoStore = videoStore;
+
+videoStore.findAll().done(function (items) {
+  console.log('findAll', items);
+
+  // Sort videos by `position`.
+  items.forEach(function (item) {
+    if (state.videos[item.position]) {
+      return;
+    }
+    state.videos[item.position] = item;
+  });
+
+  videoForward();
+
+  // TODO: Update `state.videos` on change.
+}).fail(function (err) {
+  console.error('Could not find all:', err);
+});
 
 
-function videoSetCounter(val, videos) {
-  if (counter === val) {
-    return counter;
+function videoSetCounter(val) {
+  if (state.counter === val) {
+    return state.counter;
   }
 
-  counter = val;
+  state.counter = val;
 
-  if (counter < 0) {
-    counter = videos.length - 1;
+  if (state.counter < 0) {
+    state.counter = state.videos.length - 1;
   }
 
-  if (counter === videos.length) {
-    counter = 0;
+  if (state.counter === state.videos.length) {
+    state.counter = 0;
   }
 
-  return counter;
+  return state.counter;
 }
 
 function videoJump(videoIdxOrObj) {
   var videoIdx = videoIdxOrObj;
 
   if (typeof videoIdxOrObj === 'object') {
-    videoIdx = videos.indexOf(videoIdxOrObj);
+    videoIdx = state.videos.indexOf(videoIdxOrObj);
   }
 
   return videoPlay(videoIdx);
 }
 
 function videoStep(increment) {
-  return videoPlay(counter + increment);
+  return videoPlay(state.counter + increment);
 }
 
 function videoBack() {
-  return videoPlay(counter - 1);
+  return videoPlay(state.counter - 1);
 }
 
 function videoForward() {
-  return videoPlay(counter + 1);
+  return videoPlay(state.counter + 1);
 }
 
 function videoPlay(videoIdx) {
-  // return videosLoaded.then(function () {
+  videoIdx = videoSetCounter(videoIdx);
 
-    videoIdx = videoSetCounter(videoIdx, videos);
+  if (state.videoCurrent && state.videoCurrent._idx === videoIdx) {
+    // We're already viewing that video, silly.
+    return videoIdx;
+  }
 
-    if (videoCurrent && videoCurrent._idx === videoIdx) {
-      // We're already viewing that video, silly.
-      return videoIdx;
-    }
+  state.videoCurrent = state.videos[videoIdx];
 
-    videoCurrent = videos[videoIdx];
-
-    // var imgvideo = videoCurrent.image;
-    // var imgOverlay = videoCurrent.overlay;
-
-    main.innerHTML = (
-      '<iframe src="/video.html?' + videoCurrent.url + '" allowfullscreen></iframe>\n'
-    );
-
-  // });
+  if (iframe.src === 'http://localhost:8080/') {
+    iframe.src = 'http://localhost:8080/#{"fullscreen":true,"controls":false,"autoplay":true,"video":"http://localhost:3000/api/video/video/?url=' + state.videoCurrent.url + '"}';
+  } else {
+    iframe.contentWindow.postMessage({
+      fullscreen: true,
+      controls: false,
+      autoplay: true,
+      video: 'http://localhost:3000/api/video/video/?url=' + state.videoCurrent.url
+    }, '*');
+  }
 }
-
-videoForward();
 
 
 function onkey(e) {
-  e.stopPropagation();
+  // e.stopPropagation();
 
 console.log('onkey', e);
 
@@ -142,27 +117,33 @@ console.log('onkey', e);
     videoBack();
   } else if (e.keyCode === 39) {
     videoForward();
-  }
-
-  switch (e.key) {
-    case 'c':
-    case 'n':
-    case 'u':
-      window.location.href = '/manage';
-      break;
+  } else if (e.key === 'c' || e.key === 'n' || e.key == 'u') {
+    window.location.href = '/create';
+  } else {
+    console.log('post message key', e);
+    iframe.contentWindow.postMessage({
+      event: {
+        keyCode: e.keyCode,
+        charCode: e.charCode
+      }
+    }, '*');
   }
 }
 
-
-document.addEventListener('keypress', function (e) {
-  if (document.activeElement !== document.body ||
-      e.alt || e.ctrlKey || e.metaKey) {
-
+document.body.addEventListener('keyup', function (e) {
+  console.log('keyup', e);
+  if (e.alt || e.ctrlKey || e.metaKey) {
     return;
   }
 
   onkey(e);
 });
 
+window.addEventListener('message', function (e) {
+  if (typeof e.data === 'object') {
+    console.log('got keypress from iframe window');
+    onkey(e.data.event);
+  }
+});
 
 })();

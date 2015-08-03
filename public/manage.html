@@ -75,16 +75,15 @@
           <ul id="previews" class="previews col col--previews">
           </ul>
           <div class="col col--urls">
-            <textarea id="urls" name="urls" class="urls">
-https://www.youtube.com/watch?v=scL_bXF7k_Q
-https://www.youtube.com/watch?v=huC3s9lsf4k
-https://www.youtube.com/watch?v=hI7-Fsb9gaY
-</textarea>
+            <textarea id="urls" name="urls" class="urls"></textarea>
           </div>
         </div>
         <p><button id="playBtn" class="playBtn" type="submit">Play Playlist</button></p>
       </form>
     </main>
+    <!-- Appback requires jQuery because it depends on Deferred -->
+    <script src="/js/lib/jquery-2.1.4.min.js"></script>
+    <script src="/js/lib/appback.js"></script>
     <script src="/js/main.js"></script>
   </body>
 </html>

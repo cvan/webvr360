@@ -54,8 +54,8 @@ var server = app.listen(process.env.PORT || '3000', function () {
 /**
  * Sample usage:
  *
- * http://localhost:3000/video/info?preset=24&url=https://www.youtube.com/watch?v=scL_bXF7k_Q
- * http://localhost:3000/video/info?preset=24&url=scL_bXF7k_Q
+ * http://localhost:3000/api/video/info?preset=24&url=https://www.youtube.com/watch?v=scL_bXF7k_Q
+ * http://localhost:3000/api/video/info?preset=24&url=scL_bXF7k_Q
  *
  */
 function videoInfo(req, res) {
@@ -75,8 +75,8 @@ function videoInfo(req, res) {
 /**
  * Sample usage:
  *
- * http://localhost:3000/video/audio?preset=24&url=https://www.youtube.com/watch?v=scL_bXF7k_Q
- * http://localhost:3000/video/audio?preset=24&url=scL_bXF7k_Q
+ * http://localhost:3000/api/video/audio?preset=24&url=https://www.youtube.com/watch?v=scL_bXF7k_Q
+ * http://localhost:3000/api/video/audio?preset=24&url=scL_bXF7k_Q
  *
  */
 function videoAudio(req, res) {
@@ -95,8 +95,8 @@ function videoAudio(req, res) {
 /**
  * Sample usage:
  *
- * http://localhost:3000/video/video?preset=hd&url=https://www.youtube.com/watch?v=scL_bXF7k_Q
- * http://localhost:3000/video/video?preset=hd&url=scL_bXF7k_Q
+ * http://localhost:3000/api/video/video?preset=hd&url=https://www.youtube.com/watch?v=scL_bXF7k_Q
+ * http://localhost:3000/api/video/video?preset=hd&url=scL_bXF7k_Q
  *
  */
 function videoVideo(req, res) {
@@ -131,8 +131,8 @@ function roomPlay(req, res) {
 }
 
 app.get('/', roomManage);
-app.get('/manage', roomManage);
-app.get('/manage/:room', roomManage);
+app.get(/(manage|edit|create)/, roomManage);
+app.get(/(manage|edit|create)\/:room/, roomManage);
 
 app.get('/play', roomPlay);
 app.get('/play/:room', roomPlay);

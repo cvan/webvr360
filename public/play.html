@@ -8,12 +8,15 @@
       html, body { height: 100%; }
       body { background: #000 }
       a, a:hover { color: #fff; }
-      .main, iframe { border: 0; height: 100%; width: 100%; }
+      .iframe { border: 0; height: 100%; width: 100%; }
+      /*.pointerNone { pointer-events: none; }*/
     </style>
   </head>
   <body>
-    <main id="main" class="main">
-    </main>
+    <iframe allowfullscreen id="iframe" class="iframe pointerNone" src="http://localhost:8080/"></iframe>
+    <!-- Appback requires jQuery because it depends on Deferred -->
+    <script src="/js/lib/jquery-2.1.4.min.js"></script>
+    <script src="/js/lib/appback.js"></script>
     <script src="/js/play.js"></script>
   </body>
 </html>
