@@ -1,7 +1,7 @@
 {
   "name": "webvr-youtube-360",
   "version": "1.0.0",
-  "description": "It's like Tim Berners-Lee meets YouTube.",
+  "description": "It's like Tim Berners-Lee meets Oculus meets YouTube.",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
