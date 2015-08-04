@@ -1,6 +1,6 @@
-# WebVR YouTube 360° Video
+# WebVR 360°
 
-It's like Tim Berners-Lee meets Oculus meets YouTube.
+It's like Tim Berners-Lee meets YouTube + Vrideo + anything else.
 
 
 ## Licence
