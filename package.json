@@ -1,5 +1,5 @@
 {
-  "name": "webvr-youtube-360",
+  "name": "webvr360",
   "version": "1.0.0",
   "description": "It's like Tim Berners-Lee meets Oculus meets YouTube.",
   "main": "server.js",
@@ -12,13 +12,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/cvan/webvr-youtube-360.git"
+    "url": "https://github.com/cvan/webvr360.git"
   },
   "author": "Chris Van",
   "bugs": {
-    "url": "https://github.com/cvan/webvr-youtube-360/issues"
+    "url": "https://github.com/cvan/webvr360/issues"
   },
-  "homepage": "https://github.com/cvan/webvr-youtube-360",
+  "homepage": "https://github.com/cvan/webvr360",
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.13.2",
