@@ -3,12 +3,8 @@ var cors = require('cors');
 var express = require('express');
 var keenio = require('express-keenio');
 var morgan = require('morgan');
-var nunjucks = require('nunjucks');
-var redis = require('redis');
 var request = require('request');
-var shortid = require('shortid');
 
-var db = require('./lib/db');
 var getInfo = require('./lib/get-info');
 
 
